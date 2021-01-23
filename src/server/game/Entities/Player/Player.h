@@ -1969,6 +1969,8 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         static TeamId TeamIdForRace(uint8 race);
         uint32 GetTeam() const { return m_team; }
         TeamId GetTeamId() const { return m_team == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
+        bool IsTeamAlliance() const { return m_team == ALLIANCE; }
+        bool IsTeamHorde() const { return m_team == HORDE; }
         void setFactionForRace(uint8 race);
 
         void InitDisplayIds();
@@ -2436,6 +2438,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
 
         bool MeetPlayerCondition(uint32 conditionId) const;
 
+        bool IsInRestArea() const { return HasPlayerFlag(PLAYER_FLAGS_RESTING) || HasUnitFlag2(UNIT_FLAG2_ALLOW_CHANGING_TALENTS); }
         bool HasPlayerFlag(PlayerFlags flags) const { return (*m_playerData->PlayerFlags & flags) != 0; }
         void AddPlayerFlag(PlayerFlags flags) { SetUpdateFieldFlagValue(m_values.ModifyValue(&Player::m_playerData).ModifyValue(&UF::PlayerData::PlayerFlags), flags); }
         void RemovePlayerFlag(PlayerFlags flags) { RemoveUpdateFieldFlagValue(m_values.ModifyValue(&Player::m_playerData).ModifyValue(&UF::PlayerData::PlayerFlags), flags); }
@@ -2539,6 +2542,11 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
 
         void AddAuraVision(PlayerFieldByte2Flags flags) { SetUpdateFieldFlagValue(m_values.ModifyValue(&Player::m_activePlayerData).ModifyValue(&UF::ActivePlayerData::AuraVision), flags); }
         void RemoveAuraVision(PlayerFieldByte2Flags flags) { RemoveUpdateFieldFlagValue(m_values.ModifyValue(&Player::m_activePlayerData).ModifyValue(&UF::ActivePlayerData::AuraVision), flags); }
+
+        void SetWarModeDesired(bool enabled);
+        bool IsWarModeDesired() const { return HasPlayerFlag(PLAYER_FLAGS_WAR_MODE_DESIRED); }
+        bool IsWarModeActive() const { return HasPlayerFlag(PLAYER_FLAGS_WAR_MODE_ACTIVE); }
+        void UpdateWarModeAuras();
 
         UF::UpdateField<UF::PlayerData, 0, TYPEID_PLAYER> m_playerData;
         UF::UpdateField<UF::ActivePlayerData, 0, TYPEID_ACTIVE_PLAYER> m_activePlayerData;

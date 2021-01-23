@@ -21,6 +21,12 @@
 #include "Define.h"
 #include "DetourNavMesh.h"
 
+enum ZoneType : uint32
+{
+    ZONE_STORMWIND_CITY = 1519,
+    ZONE_ORGRIMMAR = 1637,
+};
+
 enum SpellEffIndex : uint8
 {
     EFFECT_0 = 0,
