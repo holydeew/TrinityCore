@@ -1001,8 +1001,7 @@ void ObjectMgr::CheckCreatureTemplate(CreatureTemplate const* cInfo)
         const_cast<CreatureTemplate*>(cInfo)->type = CREATURE_TYPE_HUMANOID;
     }
 
-    // must exist or used hidden but used in data horse case
-    if (cInfo->family && !sCreatureFamilyStore.LookupEntry(cInfo->family) && cInfo->family != CREATURE_FAMILY_HORSE_CUSTOM)
+    if (cInfo->family && !sCreatureFamilyStore.LookupEntry(cInfo->family))
     {
         TC_LOG_ERROR("sql.sql", "Creature (Entry: %u) has invalid creature family (%u) in `family`.", cInfo->Entry, cInfo->family);
         const_cast<CreatureTemplate*>(cInfo)->family = CREATURE_FAMILY_NONE;
@@ -1202,8 +1201,8 @@ void ObjectMgr::LoadGameObjectAddons()
 {
     uint32 oldMSTime = getMSTime();
 
-    //                                               0     1                 2                 3                 4                 5                 6                  7
-    QueryResult result = WorldDatabase.Query("SELECT guid, parent_rotation0, parent_rotation1, parent_rotation2, parent_rotation3, invisibilityType, invisibilityValue, WorldEffectID FROM gameobject_addon");
+    //                                               0     1                 2                 3                 4                 5                 6                  7              8
+    QueryResult result = WorldDatabase.Query("SELECT guid, parent_rotation0, parent_rotation1, parent_rotation2, parent_rotation3, invisibilityType, invisibilityValue, WorldEffectID, AIAnimKitID FROM gameobject_addon");
 
     if (!result)
     {
@@ -1230,6 +1229,7 @@ void ObjectMgr::LoadGameObjectAddons()
         gameObjectAddon.invisibilityType = InvisibilityType(fields[5].GetUInt8());
         gameObjectAddon.InvisibilityValue = fields[6].GetUInt32();
         gameObjectAddon.WorldEffectID = fields[7].GetUInt32();
+        gameObjectAddon.AIAnimKitID   = fields[8].GetUInt32();
 
         if (gameObjectAddon.invisibilityType >= TOTAL_INVISIBILITY_TYPES)
         {
@@ -1254,6 +1254,12 @@ void ObjectMgr::LoadGameObjectAddons()
         {
             TC_LOG_ERROR("sql.sql", "GameObject (GUID: " UI64FMTD ") has invalid WorldEffectID (%u) in `gameobject_addon`, set to 0.", guid, gameObjectAddon.WorldEffectID);
             gameObjectAddon.WorldEffectID = 0;
+        }
+
+        if (gameObjectAddon.AIAnimKitID && !sAnimKitStore.LookupEntry(gameObjectAddon.AIAnimKitID))
+        {
+            TC_LOG_ERROR("sql.sql", "GameObject (GUID: " UI64FMTD ") has invalid AIAnimKitID (%u) in `gameobject_addon`, set to 0.", guid, gameObjectAddon.AIAnimKitID);
+            gameObjectAddon.AIAnimKitID = 0;
         }
 
         ++count;
@@ -4157,6 +4163,7 @@ void ObjectMgr::LoadQuests()
     for (auto itr = _questTemplates.begin(); itr != _questTemplates.end(); ++itr)
         delete itr->second;
     _questTemplates.clear();
+    _questTemplatesAutoPush.clear();
     _questObjectives.clear();
 
     _exclusiveQuestGroups.clear();
@@ -4208,6 +4215,8 @@ void ObjectMgr::LoadQuests()
 
         Quest* newQuest = new Quest(fields);
         _questTemplates[newQuest->GetQuestId()] = newQuest;
+        if (newQuest->IsAutoPush())
+            _questTemplatesAutoPush.push_back(newQuest);
     } while (result->NextRow());
 
     struct QuestLoaderHelper
@@ -7481,8 +7490,8 @@ void ObjectMgr::LoadGameObjectTemplateAddons()
 {
     uint32 oldMSTime = getMSTime();
 
-    //                                                0       1       2      3        4        5
-    QueryResult result = WorldDatabase.Query("SELECT entry, faction, flags, mingold, maxgold, WorldEffectID FROM gameobject_template_addon");
+    //                                               0      1        2      3        4        5              6
+    QueryResult result = WorldDatabase.Query("SELECT entry, faction, flags, mingold, maxgold, WorldEffectID, AIAnimKitID FROM gameobject_template_addon");
 
     if (!result)
     {
@@ -7510,6 +7519,7 @@ void ObjectMgr::LoadGameObjectTemplateAddons()
         gameObjectAddon.mingold       = fields[3].GetUInt32();
         gameObjectAddon.maxgold       = fields[4].GetUInt32();
         gameObjectAddon.WorldEffectID = fields[5].GetUInt32();
+        gameObjectAddon.AIAnimKitID   = fields[6].GetUInt32();
 
         // checks
         if (gameObjectAddon.faction && !sFactionTemplateStore.LookupEntry(gameObjectAddon.faction))
@@ -7532,6 +7542,12 @@ void ObjectMgr::LoadGameObjectTemplateAddons()
         {
             TC_LOG_ERROR("sql.sql", "GameObject (Entry: %u) has invalid WorldEffectID (%u) defined in `gameobject_template_addon`, set to 0.", entry, gameObjectAddon.WorldEffectID);
             gameObjectAddon.WorldEffectID = 0;
+        }
+
+        if (gameObjectAddon.AIAnimKitID && !sAnimKitStore.LookupEntry(gameObjectAddon.AIAnimKitID))
+        {
+            TC_LOG_ERROR("sql.sql", "GameObject (Entry: %u) has invalid AIAnimKitID (%u) defined in `gameobject_template_addon`, set to 0.", entry, gameObjectAddon.AIAnimKitID);
+            gameObjectAddon.AIAnimKitID = 0;
         }
 
         ++count;

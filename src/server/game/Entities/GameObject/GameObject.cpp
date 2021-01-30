@@ -107,7 +107,7 @@ QuaternionData QuaternionData::fromEulerAnglesZYX(float Z, float Y, float X)
 }
 
 GameObject::GameObject() : WorldObject(false), MapObject(),
-    m_model(nullptr), m_goValue(), m_AI(nullptr), m_respawnCompatibilityMode(false), _animKitId(0), _worldEffectID(0)
+    m_model(nullptr), m_goValue(), m_AI(nullptr), m_respawnCompatibilityMode(false), _animKitId(0), _worldEffectID(0), m_visibleByUnitOnly()
 {
     m_objectType |= TYPEMASK_GAMEOBJECT;
     m_objectTypeId = TYPEID_GAMEOBJECT;
@@ -327,6 +327,9 @@ bool GameObject::Create(uint32 entry, Map* map, Position const& pos, QuaternionD
             m_updateFlag.GameObject = true;
             SetWorldEffectID(m_goTemplateAddon->WorldEffectID);
         }
+
+        if (m_goTemplateAddon->AIAnimKitID)
+            _animKitId = m_goTemplateAddon->AIAnimKitID;
     }
 
     SetEntry(goInfo->entry);
@@ -427,16 +430,22 @@ bool GameObject::Create(uint32 entry, Map* map, Position const& pos, QuaternionD
             break;
     }
 
-    if (gameObjectAddon && gameObjectAddon->InvisibilityValue)
+    if (gameObjectAddon)
     {
-        m_invisibility.AddFlag(gameObjectAddon->invisibilityType);
-        m_invisibility.AddValue(gameObjectAddon->invisibilityType, gameObjectAddon->InvisibilityValue);
-    }
+        if (gameObjectAddon->InvisibilityValue)
+        {
+            m_invisibility.AddFlag(gameObjectAddon->invisibilityType);
+            m_invisibility.AddValue(gameObjectAddon->invisibilityType, gameObjectAddon->InvisibilityValue);
+        }
 
-    if (gameObjectAddon && gameObjectAddon->WorldEffectID)
-    {
-        m_updateFlag.GameObject = true;
-        SetWorldEffectID(gameObjectAddon->WorldEffectID);
+        if (gameObjectAddon->WorldEffectID)
+        {
+            m_updateFlag.GameObject = true;
+            SetWorldEffectID(gameObjectAddon->WorldEffectID);
+        }
+
+        if (gameObjectAddon->AIAnimKitID)
+            _animKitId = gameObjectAddon->AIAnimKitID;
     }
 
     LastUsedScriptID = GetGOInfo()->ScriptId;

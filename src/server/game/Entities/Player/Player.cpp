@@ -2378,6 +2378,8 @@ void Player::GiveLevel(uint8 level)
 
     UpdateCriteria(CRITERIA_TYPE_REACH_LEVEL);
 
+    PushQuests();
+
     sScriptMgr->OnPlayerLevelChanged(this, oldLevel);
 }
 
@@ -6109,6 +6111,12 @@ void Player::CheckAreaExploreAndOutdoor()
                     XP = uint32(sObjectMgr->GetBaseXP(areaLevel) * sWorld->getRate(RATE_XP_EXPLORE));
                 }
 
+                if (sWorld->getIntConfig(CONFIG_MIN_DISCOVERED_SCALED_XP_RATIO))
+                {
+                    uint32 minScaledXP = uint32(sObjectMgr->GetBaseXP(areaLevel)*sWorld->getRate(RATE_XP_EXPLORE)) * sWorld->getIntConfig(CONFIG_MIN_DISCOVERED_SCALED_XP_RATIO) / 100;
+                    XP = std::max(minScaledXP, XP);
+                }
+
                 GiveXP(XP, nullptr);
                 SendExplorationExperience(areaId, XP);
             }
@@ -7082,6 +7090,8 @@ void Player::UpdateArea(uint32 newArea)
         _restMgr->SetRestFlag(REST_FLAG_IN_FACTION_AREA);
     else
         _restMgr->RemoveRestFlag(REST_FLAG_IN_FACTION_AREA);
+
+    PushQuests();
 
     UpdateCriteria(CRITERIA_TYPE_TRAVELLED_TO_AREA, newArea);
 }
@@ -15456,8 +15466,7 @@ void Player::AddQuest(Quest const* quest, Object* questGiver)
                     GetReputationMgr().SetVisible(factionEntry);
                 break;
             case QUEST_OBJECTIVE_CRITERIA_TREE:
-                if (quest->HasFlagEx(QUEST_FLAGS_EX_IS_WORLD_QUEST))
-                    m_questObjectiveCriteriaMgr->ResetCriteriaTree(obj.ObjectID);
+                m_questObjectiveCriteriaMgr->ResetCriteriaTree(obj.ObjectID);
                 break;
             default:
                 break;
@@ -16760,6 +16769,20 @@ void Player::SetQuestSlotTimer(uint16 slot, uint32 timer)
         .ModifyValue(&UF::QuestLog::EndTime), timer);
 }
 
+void Player::SetQuestSlotObjectiveFlag(uint16 slot, int8 objectiveIndex)
+{
+    SetUpdateFieldFlagValue(m_values.ModifyValue(&Player::m_playerData)
+        .ModifyValue(&UF::PlayerData::QuestLog, slot)
+        .ModifyValue(&UF::QuestLog::ObjectiveFlags), 1 << objectiveIndex);
+}
+
+void Player::RemoveQuestSlotObjectiveFlag(uint16 slot, int8 objectiveIndex)
+{
+    RemoveUpdateFieldFlagValue(m_values.ModifyValue(&Player::m_playerData)
+        .ModifyValue(&UF::PlayerData::QuestLog, slot)
+        .ModifyValue(&UF::QuestLog::ObjectiveFlags), 1 << objectiveIndex);
+}
+
 void Player::SetQuestCompletedBit(uint32 questBit, bool completed)
 {
     if (!questBit)
@@ -17461,9 +17484,9 @@ void Player::SetQuestObjectiveData(QuestObjective const& objective, int32 data)
         if (!objective.IsStoringFlag())
             SetQuestSlotCounter(log_slot, objective.StorageIndex, status.ObjectiveData[objective.StorageIndex]);
         else if (data)
-            SetQuestSlotState(log_slot, 256 << objective.StorageIndex);
+            SetQuestSlotObjectiveFlag(log_slot, objective.StorageIndex);
         else
-            RemoveQuestSlotState(log_slot, 256 << objective.StorageIndex);
+            RemoveQuestSlotObjectiveFlag(log_slot, objective.StorageIndex);
     }
 }
 
@@ -18746,7 +18769,21 @@ bool Player::LoadFromDB(ObjectGuid guid, CharacterDatabaseQueryHolder* holder)
 
     m_achievementMgr->CheckAllAchievementCriteria(this);
     m_questObjectiveCriteriaMgr->CheckAllQuestObjectiveCriteria(this);
+
+    PushQuests();
     return true;
+}
+
+void Player::PushQuests()
+{
+    for (Quest const* quest : sObjectMgr->GetQuestTemplatesAutoPush())
+    {
+        if (quest->GetQuestTag() && quest->GetQuestTag() != QuestTagType::Tag)
+            continue;
+
+        if (!quest->IsUnavailable() && CanTakeQuest(quest, false))
+            AddQuestAndCheckCompletion(quest, nullptr);
+    }
 }
 
 void Player::_LoadCUFProfiles(PreparedQueryResult result)
@@ -19559,7 +19596,7 @@ void Player::_LoadQuestStatus(PreparedQueryResult result)
     uint16 slot = 0;
 
     ////                                                       0      1       2
-    //QueryResult* result = CharacterDatabase.PQuery("SELECT quest, status, timer WHERE guid = '%u'", GetGUIDLow());
+    //QueryResult* result = CharacterDatabase.PQuery("SELECT quest, status, timer WHERE guid = '%u' AND status <> 0", GetGUIDLow());
 
     if (result)
     {
@@ -19659,7 +19696,7 @@ void Player::_LoadQuestStatusObjectives(PreparedQueryResult result)
                     if (!objectiveItr->IsStoringFlag())
                         SetQuestSlotCounter(slot, objectiveIndex, data);
                     else if (data)
-                        SetQuestSlotState(slot, 256 << objectiveIndex);
+                        SetQuestSlotObjectiveFlag(slot, objectiveIndex);
                 }
                 else
                     TC_LOG_ERROR("entities.player", "Player::_LoadQuestStatusObjectives: Player '%s' (%s) has quest %d out of range objective index %u.", GetName().c_str(), GetGUID().ToString().c_str(), questID, objectiveIndex);
@@ -25444,7 +25481,7 @@ bool Player::isHonorOrXPTarget(Unit const* victim) const
     uint8 k_grey  = Trinity::XP::GetGrayLevel(getLevel());
 
     // Victim level less gray level
-    if (v_level < k_grey)
+    if (v_level < k_grey && !sWorld->getIntConfig(CONFIG_MIN_CREATURE_SCALED_XP_RATIO))
         return false;
 
     if (Creature const* const creature = victim->ToCreature())

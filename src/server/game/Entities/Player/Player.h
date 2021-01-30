@@ -1413,6 +1413,8 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         void SetQuestSlotState(uint16 slot, uint32 state);
         void RemoveQuestSlotState(uint16 slot, uint32 state);
         void SetQuestSlotTimer(uint16 slot, uint32 timer);
+        void SetQuestSlotObjectiveFlag(uint16 slot, int8 objectiveIndex);
+        void RemoveQuestSlotObjectiveFlag(uint16 slot, int8 objectiveIndex);
         void SetQuestCompletedBit(uint32 questBit, bool completed);
 
         uint16 GetReqKillOrCastCurrentCount(uint32 quest_id, int32 entry) const;
@@ -2583,6 +2585,8 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         /*********************************************************/
         /***                    QUEST SYSTEM                   ***/
         /*********************************************************/
+
+        void PushQuests();
 
         //We allow only one timed quest active at the same time. Below can then be simple value instead of set.
         typedef std::set<uint32> QuestSet;
