@@ -28768,7 +28768,7 @@ void Player::SetWarModeDesired(bool enabled)
 void Player::UpdateWarModeAuras()
 {
     uint32 auraInside = 282559;
-    uint32 auraOutside = 269083;
+    uint32 auraOutside = WARMODE_ENLISTED_SPELL_OUTSIDE;
     uint32 auraOutsideMaxLvl = 289954;
 
     if (IsWarModeDesired())
@@ -28784,7 +28784,13 @@ void Player::UpdateWarModeAuras()
         else
         {
             RemoveAurasDueToSpell(auraInside);
-            CastSpell(this, IsAtMaxLevel() ? auraOutsideMaxLvl : auraOutside, true);
+
+            TeamId team = sWorld->GetCurrentFactionBalanceTeam();
+            CustomSpellValues const* values = nullptr;
+            if (GetTeamId() == team)
+                values = &(sWorld->GetCurrentFactionBalanceRewardSpellValues());
+            CastSpell(this, IsAtMaxLevel() ? auraOutsideMaxLvl : auraOutside, true, nullptr, nullptr, ObjectGuid::Empty, values);
+
             AddPlayerFlag(PLAYER_FLAGS_WAR_MODE_ACTIVE);
         }
     }

@@ -29,6 +29,7 @@
 #include "ObjectGuid.h"
 #include "SharedDefines.h"
 #include "Timer.h"
+#include "Unit.h"
 
 #include <atomic>
 #include <list>
@@ -217,6 +218,10 @@ enum WorldFloatConfigs
     CONFIG_ARENA_MATCHMAKER_RATING_MODIFIER,
     CONFIG_RESPAWN_DYNAMICRATE_CREATURE,
     CONFIG_RESPAWN_DYNAMICRATE_GAMEOBJECT,
+    CONFIG_CALL_TO_ARMS_5_PCT,
+    CONFIG_CALL_TO_ARMS_10_PCT,
+    CONFIG_CALL_TO_ARMS_20_PCT,
+    CONFIG_OVERWHELMING_ODDS_PCT,
     FLOAT_CONFIG_VALUE_COUNT
 };
 
@@ -413,6 +418,7 @@ enum WorldIntConfigs
     CONFIG_SOCKET_TIMEOUTTIME_ACTIVE,
     CONFIG_BLACKMARKET_MAXAUCTIONS,
     CONFIG_BLACKMARKET_UPDATE_PERIOD,
+    CONFIG_FACTION_BALANCE_LEVEL_CHECK_DIFF,
     INT_CONFIG_VALUE_COUNT
 };
 
@@ -555,6 +561,17 @@ enum WorldStates
     WS_MONTHLY_QUEST_RESET_TIME = 20007,                     // Next monthly reset time
     // Cata specific custom worldstates
     WS_GUILD_WEEKLY_RESET_TIME  = 20050,                     // Next guild week reset time
+};
+
+// The reward an outnumbered faction is currently receiving.
+enum class FactionOutnumberReward
+{
+    None,
+    Percent5,
+    Percent10,
+    Percent20,
+    Overwhelming,
+    MAX,
 };
 
 /// Storage class for commands issued for delayed execution
@@ -796,7 +813,18 @@ class TC_GAME_API World
         bool IsGuidWarning() { return _guidWarn; }
         bool IsGuidAlert() { return _guidAlert; }
 
+
+        CustomSpellValues const & GetCurrentFactionBalanceRewardSpellValues() { return _currentFactionBalanceRewardSpellValues; }
+        TeamId GetCurrentFactionBalanceTeam() const { return _hasForcedFactionBalance ? _forcedFactionBalance : _currentFactionBalance; }
+
+        void SetFactionBalanceForce(TeamId team, FactionOutnumberReward reward = FactionOutnumberReward::None);
+        void SetFactionBalanceForceOff();
+
     protected:
+
+        void UpdateFactionBalance();
+        void UpdateFactionBalanceRewardSpellValues();
+
         void _UpdateGameTime();
 
         // callback for UpdateRealmCharacters
@@ -814,6 +842,8 @@ class TC_GAME_API World
         void ResetRandomBG();
         void ResetGuildCap();
         void ResetCurrencyWeekCap();
+        void InitFactionBalanceQuery();
+
     private:
         World();
         ~World();
@@ -914,6 +944,14 @@ class TC_GAME_API World
         bool _guidAlert;
         uint32 _warnDiff;
         time_t _warnShutdownTime;
+
+        std::string m_factionBalanceQuery;
+        TeamId _currentFactionBalance; // the team that has higher percentage
+        FactionOutnumberReward _currentFactionBalanceReward;
+        bool _hasForcedFactionBalance;
+        TeamId _forcedFactionBalance;
+        FactionOutnumberReward _forcedFactionBalanceReward;
+        CustomSpellValues _currentFactionBalanceRewardSpellValues;
 };
 
 TC_GAME_API extern Realm realm;
