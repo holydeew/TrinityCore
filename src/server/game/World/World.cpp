@@ -3772,7 +3772,7 @@ void World::UpdateFactionBalanceRewardSpellValues()
     {
         SpellEffectInfoVector const effects = spellEntry->GetEffects();
         _currentFactionBalanceRewardSpellValues.Reserve(effects.size());
-        for (int i = 0; i < effects.size(); ++i)
+        for (uint32 i = 0; i < effects.size(); ++i)
             _currentFactionBalanceRewardSpellValues.AddSpellMod(SpellValueMod(SPELLVALUE_BASE_POINT0 + i), effectsValue);
     }
 }
