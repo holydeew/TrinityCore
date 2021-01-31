@@ -3787,7 +3787,6 @@ uint8 GetFactionOutnumberedRewardEffectValue(FactionOutnumberReward reward)
 void World::UpdateFactionBalanceRewardSpellValues()
 {
     FactionOutnumberReward reward = _hasForcedFactionBalance ? _forcedFactionBalanceReward : _currentFactionBalanceReward;
-    // bool giveOverwhelmingQuest = reward == FactionOutnumberReward::Percent10 || reward == FactionOutnumberReward::Percent20;
 
     uint8 effectsValue = GetFactionOutnumberedRewardEffectValue(reward);
     SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(WARMODE_ENLISTED_SPELL_OUTSIDE, DIFFICULTY_NONE);
