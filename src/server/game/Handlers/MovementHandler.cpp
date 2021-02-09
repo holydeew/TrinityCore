@@ -297,15 +297,6 @@ void WorldSession::HandleMovementOpcodes(WorldPackets::Movement::ClientPlayerMov
     HandleMovementOpcode(packet.GetOpcode(), packet.Status);
 }
 
-void WorldSession::TrySetInWater(Player* plrMover, MovementInfo const& movementInfo)
-{
-    if (plrMover && ((movementInfo.flags & MOVEMENTFLAG_SWIMMING) != 0) != plrMover->IsInWater())
-    {
-        // now client not include swimming flag in case jumping under water
-        plrMover->SetInWater(!plrMover->IsInWater() || plrMover->GetMap()->IsUnderWater(plrMover->GetPhaseShift(), movementInfo.pos.GetPositionX(), movementInfo.pos.GetPositionY(), movementInfo.pos.GetPositionZ()));
-    }
-}
-
 void WorldSession::HandleMovementOpcode(OpcodeClient opcode, MovementInfo& movementInfo)
 {
     Unit* mover = _player->m_unitMovedByMe;
@@ -407,7 +398,6 @@ void WorldSession::HandleMovementOpcode(OpcodeClient opcode, MovementInfo& movem
     // Some vehicles allow the passenger to turn by himself
     if (Vehicle* vehicle = mover->GetVehicle())
     {
-        TrySetInWater(plrMover, movementInfo);
         if (VehicleSeatEntry const* seat = vehicle->GetSeatForPassenger(mover))
         {
             if (seat->Flags & VEHICLE_SEAT_FLAG_ALLOW_TURNING)
@@ -423,7 +413,6 @@ void WorldSession::HandleMovementOpcode(OpcodeClient opcode, MovementInfo& movem
     }
 
     mover->UpdatePosition(movementInfo.pos);
-    TrySetInWater(plrMover, movementInfo);
 
     WorldPackets::Movement::MoveUpdate moveUpdate;
     moveUpdate.Status = &mover->m_movementInfo;
