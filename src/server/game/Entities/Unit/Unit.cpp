@@ -3171,6 +3171,7 @@ bool Unit::IsUnderWater() const
 void Unit::ProcessPositionDataChanged(PositionFullTerrainStatus const& data)
 {
     WorldObject::ProcessPositionDataChanged(data);
+    SetInWater(data.liquidStatus & MAP_LIQUID_STATUS_SWIMMING);
     ProcessTerrainStatusUpdate(data.liquidStatus, data.liquidInfo);
 }
 
@@ -3187,8 +3188,6 @@ void Unit::ProcessTerrainStatusUpdate(ZLiquidStatus status, Optional<LiquidData>
 {
     if (IsFlying() || (!IsControlledByPlayer()))
         return;
-
-    SetInWater(status & MAP_LIQUID_STATUS_SWIMMING);
 
     // liquid aura handling
     LiquidTypeEntry const* curLiquid = nullptr;

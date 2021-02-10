@@ -303,6 +303,10 @@ void WorldSession::HandleMovementOpcode(OpcodeClient opcode, MovementInfo& movem
 
     ASSERT(mover != nullptr);                      // there must always be a mover
 
+    TC_LOG_INFO("opcodes.movement", "Movement: %s, time %u, %s, Pos %s, Flags: %u, Flags2: %u",
+        GetOpcodeNameForLogging(opcode).c_str(), movementInfo.time, GetPlayerInfo().c_str(),
+        movementInfo.pos.ToString().c_str(), movementInfo.flags, movementInfo.flags2);
+
     Player* plrMover = mover->ToPlayer();
 
     // ignore, waiting processing in WorldSession::HandleMoveWorldportAckOpcode and WorldSession::HandleMoveTeleportAck
