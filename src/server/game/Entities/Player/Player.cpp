@@ -28374,7 +28374,7 @@ float Player::GetCollisionHeight(bool mounted) const
     else
     {
         //! Dismounting case - use basic default model data
-        CreatureDisplayInfoEntry const* displayInfo = sCreatureDisplayInfoStore.LookupEntry(GetNativeDisplayId());
+        CreatureDisplayInfoEntry const* displayInfo = sCreatureDisplayInfoStore.LookupEntry(GetDisplayId());
         ASSERT(displayInfo);
         CreatureModelDataEntry const* modelData = sCreatureModelDataStore.LookupEntry(displayInfo->ModelID);
         ASSERT(modelData);

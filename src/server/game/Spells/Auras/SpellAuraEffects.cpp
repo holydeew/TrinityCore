@@ -2623,6 +2623,8 @@ void AuraEffect::HandleAuraAllowFlight(AuraApplication const* aurApp, uint8 mode
 
     Unit* target = aurApp->GetTarget();
 
+    target->SetCanTransitionBetweenSwimAndFly(apply);
+
     if (!apply)
     {
         // do not remove unit flag if there are more than this auraEffect of that kind on unit on unit

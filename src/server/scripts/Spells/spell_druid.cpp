@@ -1021,15 +1021,10 @@ public:
 
         void OnApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
         {
-            uint32 triggeredSpellId;
-
             Player* player = GetTarget()->ToPlayer();
-            if (player->IsInWater()) // Aquatic form
-                triggeredSpellId = SPELL_DRUID_FORM_AQUATIC;
-            else if (player->GetSkillValue(SKILL_RIDING) >= 225 && CheckLocationForForm(SPELL_DRUID_FORM_FLIGHT) == SPELL_CAST_OK) // Flight form
-                triggeredSpellId = player->getLevel() >= 71 ? SPELL_DRUID_FORM_SWIFT_FLIGHT : SPELL_DRUID_FORM_FLIGHT;
-            else // Stag form (riding skill already checked in CheckCast)
-                triggeredSpellId = SPELL_DRUID_FORM_STAG;
+
+            // Outdoor check already passed - Travel Form (dummy) has SPELL_ATTR0_OUTDOORS_ONLY attribute.
+            uint32 triggeredSpellId = spell_dru_travel_form_dummy::GetFormSpellId(player, GetCastDifficulty(), false);
 
             player->AddAura(triggeredSpellId, player);
         }
@@ -1048,15 +1043,6 @@ public:
             OnEffectApply += AuraEffectApplyFn(spell_dru_travel_form_dummy_AuraScript::OnApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
             AfterEffectRemove += AuraEffectRemoveFn(spell_dru_travel_form_dummy_AuraScript::AfterRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
         }
-
-    private:
-        // Outdoor check already passed - Travel Form (dummy) has SPELL_ATTR0_OUTDOORS_ONLY attribute.
-        SpellCastResult CheckLocationForForm(uint32 spell)
-        {
-            Player* player = GetTarget()->ToPlayer();
-            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell, GetCastDifficulty());
-            return spellInfo->CheckLocation(player->GetMapId(), player->GetZoneId(), player->GetAreaId(), player);
-        }
     };
 
     SpellScript* GetSpellScript() const override
@@ -1068,6 +1054,33 @@ public:
     {
         return new spell_dru_travel_form_dummy_AuraScript();
     }
+
+    static uint32 GetFormSpellId(Player const* player, Difficulty difficulty, bool requiresOutdoor)
+    {
+        // Check what form is appropriate
+        if (player->IsInWater()) // Aquatic form
+            return SPELL_DRUID_FORM_AQUATIC;
+
+        if (player->GetSkillValue(SKILL_RIDING) >= 225 && CheckLocationForForm(player, difficulty, requiresOutdoor, SPELL_DRUID_FORM_FLIGHT) == SPELL_CAST_OK) // Flight form
+            return player->GetSkillValue(SKILL_RIDING) >= 300 ? SPELL_DRUID_FORM_SWIFT_FLIGHT : SPELL_DRUID_FORM_FLIGHT;
+
+        if (CheckLocationForForm(player, difficulty, requiresOutdoor, SPELL_DRUID_FORM_STAG) == SPELL_CAST_OK) // Stag form
+            return SPELL_DRUID_FORM_STAG;
+
+        return 0;
+    }
+
+private:
+    static SpellCastResult CheckLocationForForm(Player const* targetPlayer, Difficulty difficulty, bool requireOutdoors, uint32 spell_id)
+    {
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell_id, difficulty);
+
+        if (requireOutdoors && !targetPlayer->GetMap()->IsOutdoors(targetPlayer->GetPhaseShift(), targetPlayer->GetPositionX(), targetPlayer->GetPositionY(), targetPlayer->GetPositionZ()))
+            return SPELL_FAILED_ONLY_OUTDOORS;
+
+        return spellInfo->CheckLocation(targetPlayer->GetMapId(), targetPlayer->GetZoneId(), targetPlayer->GetAreaId(), targetPlayer);
+    }
+
 };
 
 // 1066 - Aquatic Form
@@ -1103,13 +1116,7 @@ public:
                 return;
 
             // Check what form is appropriate
-            Player* player = GetTarget()->ToPlayer();
-            if (player->IsInWater()) // Aquatic form
-                triggeredSpellId = SPELL_DRUID_FORM_AQUATIC;
-            else if (player->GetSkillValue(SKILL_RIDING) >= 225 && CheckLocationForForm(SPELL_DRUID_FORM_FLIGHT) == SPELL_CAST_OK) // Flight form
-                triggeredSpellId = player->GetSkillValue(SKILL_RIDING) >= 300 ? SPELL_DRUID_FORM_SWIFT_FLIGHT : SPELL_DRUID_FORM_FLIGHT;
-            else if (CheckLocationForForm(SPELL_DRUID_FORM_STAG) == SPELL_CAST_OK) // Stag form
-                triggeredSpellId = SPELL_DRUID_FORM_STAG;
+            triggeredSpellId = spell_dru_travel_form_dummy::GetFormSpellId(GetTarget()->ToPlayer(), GetCastDifficulty(), true);
 
             // If chosen form is current aura, just don't remove it.
             if (triggeredSpellId == m_scriptSpellId)
@@ -1136,17 +1143,6 @@ public:
         }
 
     private:
-        SpellCastResult CheckLocationForForm(uint32 spell_id)
-        {
-            Player* player = GetTarget()->ToPlayer();
-            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell_id, GetCastDifficulty());
-
-            if (!player->GetMap()->IsOutdoors(player->GetPhaseShift(), player->GetPositionX(), player->GetPositionY(), player->GetPositionZ()))
-                return SPELL_FAILED_ONLY_OUTDOORS;
-
-            return spellInfo->CheckLocation(player->GetMapId(), player->GetZoneId(), player->GetAreaId(), player);
-        }
-
         uint32 triggeredSpellId;
     };
 
