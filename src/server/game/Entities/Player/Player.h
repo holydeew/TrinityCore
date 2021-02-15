@@ -462,6 +462,7 @@ enum PlayerLocalFlags
     PLAYER_LOCAL_FLAG_USING_PARTY_GARRISON          = 0x00000100,
     PLAYER_LOCAL_FLAG_CAN_USE_OBJECTS_MOUNTED       = 0x00000200,
     PLAYER_LOCAL_FLAG_CAN_VISIT_PARTY_GARRISON      = 0x00000400,
+    PLAYER_LOCAL_FLAG_WAR_MODE                      = 0x00000800,
     PLAYER_LOCAL_FLAG_ACCOUNT_SECURED               = 0x00001000,   // Script_IsAccountSecured
     PLAYER_LOCAL_FLAG_OVERRIDE_TRANSPORT_SERVER_TIME= 0x00008000,
     PLAYER_LOCAL_FLAG_MENTOR_RESTRICTED             = 0x00020000,
@@ -2558,7 +2559,8 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         void SetWarModeDesired(bool enabled);
         bool IsWarModeDesired() const { return HasPlayerFlag(PLAYER_FLAGS_WAR_MODE_DESIRED); }
         bool IsWarModeActive() const { return HasPlayerFlag(PLAYER_FLAGS_WAR_MODE_ACTIVE); }
-        bool CanFightOtherFaction() const { return HasPvpFlag(UNIT_BYTE2_FLAG_PVP); }
+        bool IsWarModeLocalActive() const { return HasPvpFlag(UNIT_BYTE2_FLAG_PVP); }
+        void SetWarModeLocal(bool enabled);
         bool CanEnableWarModeInArea() const;
         void UpdateWarModeAuras();
 
