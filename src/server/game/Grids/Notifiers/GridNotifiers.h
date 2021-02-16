@@ -28,6 +28,7 @@
 #include "Player.h"
 #include "Spell.h"
 #include "SpellInfo.h"
+#include "TemporarySummon.h"
 #include "UnitAI.h"
 #include "UpdateData.h"
 
@@ -1312,7 +1313,7 @@ namespace Trinity
 
             bool operator()(Creature* u)
             {
-                if (u->getDeathState() != DEAD && u->GetEntry() == i_entry && u->IsAlive() == i_alive && i_obj.IsWithinDistInMap(u, i_range))
+                if (u->getDeathState() != DEAD && u->GetEntry() == i_entry && u->IsAlive() == i_alive && i_obj.IsWithinDistInMap(u, i_range) && !IsPersonalSpawnOfAnoter(u))
                 {
                     i_range = i_obj.GetDistance(u);         // use found unit range as new range limit for next check
                     return true;
@@ -1321,10 +1322,18 @@ namespace Trinity
             }
 
         private:
-            WorldObject const& i_obj;
-            uint32 i_entry;
-            bool   i_alive;
-            float  i_range;
+            bool IsPersonalSpawnOfAnoter(Creature* creature)
+            {
+                if (TempSummon const* tempSummon = creature->ToTempSummon())
+                    if (tempSummon->IsVisibleBySummonerOnly() && i_obj.GetGUID() != tempSummon->GetSummonerGUID())
+                        return true;
+                return false;
+            }
+
+            WorldObject const&      i_obj;
+            uint32                  i_entry;
+            bool                    i_alive;
+            float                   i_range;
 
             // prevent clone this object
             NearestCreatureEntryWithLiveStateInObjectRangeCheck(NearestCreatureEntryWithLiveStateInObjectRangeCheck const&) = delete;
