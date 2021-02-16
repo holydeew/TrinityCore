@@ -1127,6 +1127,7 @@ SpellInfo::SpellInfo(SpellNameEntry const* spellName, ::Difficulty difficulty, S
     IconFileDataId = _misc ? _misc->SpellIconFileDataID : 0;
     ActiveIconFileDataId = _misc ? _misc->ActiveIconFileDataID : 0;
     ContentTuningId = _misc ? _misc->ContentTuningID : 0;
+    ShowFutureSpellPlayerConditionID = _misc ? _misc->ShowFutureSpellPlayerConditionID : 0;
 
     _visuals = std::move(visuals);
 
@@ -3834,7 +3835,7 @@ std::vector<SpellPowerCost> SpellInfo::CalcPowerCost(Unit const* caster, SpellSc
             }
 
             if (power->PowerType == POWER_MANA)
-                flatMod *= 1.0f + caster->m_unitData->ManaCostModifierModifier;
+                flatMod *= 1.0f + caster->m_unitData->ManaCostMultiplier; // this is wrong
 
             powerCost += flatMod;
         }
@@ -4531,4 +4532,13 @@ void SpellInfo::_UnloadImplicitTargetConditionLists()
             delete cur;
         }
     }
+}
+
+bool SpellInfo::MeetsFutureSpellPlayerCondition(Player const* player) const
+{
+    if (ShowFutureSpellPlayerConditionID == 0)
+        return false;
+
+    PlayerConditionEntry const* playerCondition = sPlayerConditionStore.LookupEntry(ShowFutureSpellPlayerConditionID);
+    return !playerCondition || ConditionMgr::IsPlayerMeetingCondition(player, playerCondition);
 }
