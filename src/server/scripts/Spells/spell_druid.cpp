@@ -83,6 +83,7 @@ enum DruidSpells
     SPELL_DRUID_BRISTLING_FUR_GAIN_RAGE     = 204031,
     SPELL_DRUID_GALACTICAL_GUARDIAN_AURA    = 213708,
     SPELL_DRUID_EARTHWARDEN_AURA            = 203975,
+    SPELL_DRUID_GORE_PROC                   = 93622,
     SPELL_DRUID_MANGLE                      = 33917,
 };
 
@@ -229,6 +230,35 @@ public:
     AuraScript* GetAuraScript() const override
     {
         return new spell_dru_forms_trinket_AuraScript();
+    }
+};
+
+// 210706 - Gore
+class spell_dru_gore : public AuraScript
+{
+    PrepareAuraScript(spell_dru_gore);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_DRUID_GORE_PROC, SPELL_DRUID_MANGLE });
+    }
+
+    bool CheckEffectProc(AuraEffect const* aurEff, ProcEventInfo& /*eventInfo*/)
+    {
+        return roll_chance_i(aurEff->GetAmount());
+    }
+
+    void HandleProc(AuraEffect* /*aurEff*/, ProcEventInfo& /*procInfo*/)
+    {
+        Unit* owner = GetTarget();
+        owner->CastSpell(owner, SPELL_DRUID_GORE_PROC);
+        owner->GetSpellHistory()->ResetCooldown(SPELL_DRUID_MANGLE, true);
+    }
+
+    void Register() override
+    {
+        DoCheckEffectProc += AuraCheckEffectProcFn(spell_dru_gore::CheckEffectProc, EFFECT_0, SPELL_AURA_DUMMY);
+        OnEffectProc += AuraEffectProcFn(spell_dru_gore::HandleProc, EFFECT_0, SPELL_AURA_DUMMY);
     }
 };
 
@@ -1753,6 +1783,7 @@ void AddSC_druid_spell_scripts()
     new spell_dru_dash();
     new spell_dru_flight_form();
     new spell_dru_forms_trinket();
+    RegisterAuraScript(spell_dru_gore);
     new spell_dru_idol_lifebloom();
     new spell_dru_innervate();
     new spell_dru_lifebloom();
