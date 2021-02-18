@@ -74,9 +74,9 @@ enum DruidSpells
     SPELL_DRUID_BEAR_FORM                   = 5487,
     SPELL_DRUID_THRASH_CAT                  = 106830,
     SPELL_DRUID_THRASH_BEAR                 = 77758,
+    SPELL_DRUID_THRASH_BEAR_AURA            = 192090,
     SPELL_DRUID_BRAMBLES_REFLECT            = 203958,
     SPELL_DRUID_BRAMBLES_DAMAGE_AURA        = 213709,
-    SPELL_DRUID_BARKSKIN                    = 22812,
     SPELL_DRUID_BLOOD_FRENZY_AURA           = 203962,
     SPELL_DRUID_BLOOD_FRENZY_RAGE_GAIN      = 203961,
     SPELL_DRUID_BRISTLING_FUR_GAIN_RAGE     = 204031,
@@ -1580,10 +1580,10 @@ class spell_dru_thrash : public SpellScript
         {
             Unit* caster = GetCaster();
 
-            caster->AddAura(SPELL_DRUID_THRASH_CAT, hitUnit);
+            caster->CastSpell(hitUnit, SPELL_DRUID_THRASH_BEAR_AURA, TRIGGERED_FULL_MASK);
 
             if (GetHitDamage() > 0 && caster->HasAura(SPELL_DRUID_BLOOD_FRENZY_AURA))
-                caster->CastSpell(caster, SPELL_DRUID_BLOOD_FRENZY_AURA, true);
+                caster->CastSpell(caster, SPELL_DRUID_BLOOD_FRENZY_RAGE_GAIN, true);
         }
     }
 
@@ -1607,7 +1607,7 @@ class spell_dru_brambles : public AuraScript
 
     bool Validate(SpellInfo const* /*spellInfo*/) override
     {
-        return ValidateSpellInfo({ SPELL_DRUID_BRAMBLES_REFLECT, SPELL_DRUID_BARKSKIN, SPELL_DRUID_BRAMBLES_DAMAGE_AURA });
+        return ValidateSpellInfo({ SPELL_DRUID_BRAMBLES_REFLECT, SPELL_DRUID_BRAMBLES_DAMAGE_AURA });
     }
 
     void AfterAbsorb(AuraEffect* /*aurEff*/, DamageInfo& dmgInfo, uint32& absorbAmount)
@@ -1618,25 +1618,9 @@ class spell_dru_brambles : public AuraScript
             owner->CastCustomSpell(SPELL_DRUID_BRAMBLES_REFLECT, SPELLVALUE_BASE_POINT0, absorbAmount, attacker, TRIGGERED_FULL_MASK);
     }
 
-    void CalcPeriodic(AuraEffect const* /*aurEff*/, bool& isPeriodic, int32& amplitude)
-    {
-        isPeriodic = true;
-        amplitude = 1000;
-    }
-
-    void HandlePeriodic(AuraEffect const* /*aurEff*/)
-    {
-        // if barskin is active cast damage aura every 1s
-        Unit* owner = GetUnitOwner();
-        if (owner->HasAura(SPELL_DRUID_BARKSKIN))
-            owner->CastSpell(owner, SPELL_DRUID_BRAMBLES_DAMAGE_AURA, true);
-    }
-
     void Register() override
     {
         AfterEffectAbsorb += AuraEffectAbsorbFn(spell_dru_brambles::AfterAbsorb, EFFECT_0);
-        DoEffectCalcPeriodic += AuraEffectCalcPeriodicFn(spell_dru_brambles::CalcPeriodic, EFFECT_0, SPELL_AURA_SCHOOL_ABSORB);
-        OnEffectPeriodic += AuraEffectPeriodicFn(spell_dru_brambles::HandlePeriodic, EFFECT_0, SPELL_AURA_SCHOOL_ABSORB);
     }
 };
 
@@ -1650,7 +1634,7 @@ class spell_dru_bristling_fur : public AuraScript
         return ValidateSpellInfo({ SPELL_DRUID_BRISTLING_FUR_GAIN_RAGE });
     }
 
-    void HandleProc(AuraEffect* aurEff, ProcEventInfo& eventInfo)
+    void HandleProc(AuraEffect* /*aurEff*/, ProcEventInfo& eventInfo)
     {
         // BristlingFurRage = 100 * Damage / MaxHealth.
         if (DamageInfo* damageInfo = eventInfo.GetDamageInfo())
@@ -1698,20 +1682,17 @@ class spell_dru_galactic_guardian : public AuraScript
         return ValidateSpellInfo({ SPELL_DRUID_GALACTICAL_GUARDIAN_AURA });
     }
     
-    void HandleProc(AuraEffect* aurEff, ProcEventInfo& eventInfo)
+    void HandleProc(AuraEffect* /*aurEff*/, ProcEventInfo& eventInfo)
     {
-        if (AuraEffect* effRunSpeed = GetEffect(EFFECT_0))
+        if (DamageInfo* damageInfo = eventInfo.GetDamageInfo())
         {
-            if (DamageInfo* damageInfo = eventInfo.GetDamageInfo())
-            {
-                Unit* owner = GetUnitOwner();
+            Unit* owner = GetUnitOwner();
 
-                // free automatic moonfire on target
-                owner->CastSpell(damageInfo->GetVictim(), SPELL_DRUID_MOONFIRE, true);
+            // free automatic moonfire on target
+            owner->CastSpell(damageInfo->GetVictim(), SPELL_DRUID_MOONFIRE, true);
 
-                // Cast aura
-                owner->CastSpell(damageInfo->GetVictim(), SPELL_DRUID_GALACTICAL_GUARDIAN_AURA, true);
-            }
+            // Cast aura
+            owner->CastSpell(damageInfo->GetVictim(), SPELL_DRUID_GALACTICAL_GUARDIAN_AURA, true);
         }
     }
 
@@ -1733,78 +1714,13 @@ class spell_dru_earthwarden : public AuraScript
 
     void HandleProc(AuraEffect* aurEff, ProcEventInfo& eventInfo)
     {
-        if (DamageInfo* damageInfo = eventInfo.GetDamageInfo())
-        {
-            if (damageInfo->GetDamageType() == SPELL_DIRECT_DAMAGE)
-            {
-                if (SpellInfo const* spellInfo = damageInfo->GetSpellInfo())
-                {
-                    if (spellInfo->Id == SPELL_DRUID_THRASH_CAT || spellInfo->Id == SPELL_DRUID_THRASH_BEAR)
-                    {
-                        Unit* owner = GetUnitOwner();
-                        owner->CastSpell(owner, SPELL_DRUID_EARTHWARDEN_AURA, true);
-                    }
-                }
-            }
-        }
+        Unit* owner = GetUnitOwner();
+        owner->CastSpell(owner, SPELL_DRUID_EARTHWARDEN_AURA, true);
     }
 
     void Register() override
     {
         OnEffectProc += AuraEffectProcFn(spell_dru_earthwarden::HandleProc, EFFECT_0, SPELL_AURA_DUMMY);
-    }
-};
-
-// 155578 - Guardian of the Elune
-class spell_dru_guardian_of_the_elune : public AuraScript
-{
-    PrepareAuraScript(spell_dru_guardian_of_the_elune);
-
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_DRUID_MANGLE });
-    }
-
-    void HandleProc(AuraEffect* aurEff, ProcEventInfo& eventInfo)
-    {
-        if (DamageInfo* damageInfo = eventInfo.GetDamageInfo())
-            if (SpellInfo const* spellInfo = damageInfo->GetSpellInfo())
-                if (spellInfo->Id != SPELL_DRUID_MANGLE)
-                    PreventDefaultAction();
-    }
-
-    void Register() override
-    {
-        OnEffectProc += AuraEffectProcFn(spell_dru_guardian_of_the_elune::HandleProc, EFFECT_0, SPELL_AURA_PROC_TRIGGER_SPELL);
-    }
-};
-
-// 135288 - Tooth and Claw
-class spell_dru_tooth_and_claw : public AuraScript
-{
-    PrepareAuraScript(spell_dru_tooth_and_claw);
-
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_DRUID_MANGLE });
-    }
-
-    void HandleProc(AuraEffect* aurEff, ProcEventInfo& eventInfo)
-    {
-        bool prevent = true;
-
-        if (DamageInfo* damageInfo = eventInfo.GetDamageInfo())
-            if (!damageInfo->GetSpellInfo()) // no spell, auto attack
-                if (roll_chance_i(aurEff->GetAmount()))
-                    prevent = false;
-
-        if (prevent)
-            PreventDefaultAction();
-    }
-
-    void Register() override
-    {
-        OnEffectProc += AuraEffectProcFn(spell_dru_tooth_and_claw::HandleProc, EFFECT_0, SPELL_AURA_PROC_TRIGGER_SPELL);
     }
 };
 
@@ -1849,6 +1765,4 @@ void AddSC_druid_spell_scripts()
     RegisterAuraScript(spell_dru_tiger_dash);
     RegisterAuraScript(spell_dru_galactic_guardian);
     RegisterAuraScript(spell_dru_earthwarden);
-    RegisterAuraScript(spell_dru_guardian_of_the_elune);
-    RegisterAuraScript(spell_dru_tooth_and_claw);
 }
