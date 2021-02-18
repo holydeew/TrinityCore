@@ -212,6 +212,7 @@ bool Player::UpdateAllStats()
     UpdateExpertise(OFF_ATTACK);
     RecalculateRating(CR_ARMOR_PENETRATION);
     UpdateAllResistances();
+    UpdateMaxPower(GetPowerType());
 
     return true;
 }
