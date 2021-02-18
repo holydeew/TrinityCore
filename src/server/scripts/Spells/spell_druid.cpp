@@ -75,6 +75,7 @@ enum DruidSpells
     SPELL_DRUID_THRASH_CAT                  = 106830,
     SPELL_DRUID_THRASH_BEAR                 = 77758,
     SPELL_DRUID_THRASH_BEAR_AURA            = 192090,
+    SPELL_DRUID_BRAMBLES_PASSIVE            = 203953,
     SPELL_DRUID_BRAMBLES_REFLECT            = 203958,
     SPELL_DRUID_BRAMBLES_DAMAGE_AURA        = 213709,
     SPELL_DRUID_BLOOD_FRENZY_AURA           = 203962,
@@ -1600,7 +1601,7 @@ protected:
     bool ToCatForm() const override { return false; }
 };
 
-// 203953 Brambles
+// 203953 Brambles - SPELL_DRUID_BRAMBLES_PASSIVE
 class spell_dru_brambles : public AuraScript
 {
     PrepareAuraScript(spell_dru_brambles);
@@ -1724,6 +1725,29 @@ class spell_dru_earthwarden : public AuraScript
     }
 };
 
+// 22812 Barkskin
+class spell_dru_barkskin : public AuraScript
+{
+    PrepareAuraScript(spell_dru_barkskin);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_DRUID_BRAMBLES_PASSIVE });
+    }
+
+    void HandleUpdatePeriodic(AuraEffect* /*aurEff*/)
+    {
+        Unit* owner = GetUnitOwner();
+        if (owner->HasAura(SPELL_DRUID_BRAMBLES_PASSIVE))
+            owner->CastSpell(owner, SPELL_DRUID_BRAMBLES_DAMAGE_AURA, true);
+    }
+
+    void Register() override
+    {
+        OnEffectUpdatePeriodic += AuraEffectUpdatePeriodicFn(spell_dru_barkskin::HandleUpdatePeriodic, EFFECT_2, SPELL_AURA_PERIODIC_DUMMY);
+    }
+};
+
 void AddSC_druid_spell_scripts()
 {
     new spell_dru_dash();
@@ -1761,6 +1785,7 @@ void AddSC_druid_spell_scripts()
     RegisterSpellScript(spell_dru_thrash);
     RegisterSpellScript(spell_dru_berserk);
     RegisterAuraScript(spell_dru_brambles);
+    RegisterAuraScript(spell_dru_barkskin);
     RegisterAuraScript(spell_dru_bristling_fur);
     RegisterAuraScript(spell_dru_tiger_dash);
     RegisterAuraScript(spell_dru_galactic_guardian);
