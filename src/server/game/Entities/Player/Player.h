@@ -2554,12 +2554,13 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
 
         bool IsAtMaxLevel() const;
 
-        bool IsInFactionFriendlyArea(AreaTableEntry const* inArea = nullptr, AreaTableEntry const** outArea = nullptr) const;
+        bool IsInFactionFriendlyArea() const;
+        bool IsInFactionFriendlyArea(AreaTableEntry const* inArea) const;
 
         void SetWarModeDesired(bool enabled);
         bool IsWarModeDesired() const { return HasPlayerFlag(PLAYER_FLAGS_WAR_MODE_DESIRED); }
         bool IsWarModeActive() const { return HasPlayerFlag(PLAYER_FLAGS_WAR_MODE_ACTIVE); }
-        bool IsWarModeLocalActive() const { return HasPvpFlag(UNIT_BYTE2_FLAG_PVP); }
+        bool IsWarModeLocalActive() const { return HasPlayerLocalFlag(PLAYER_LOCAL_FLAG_WAR_MODE); }
         void SetWarModeLocal(bool enabled);
         bool CanEnableWarModeInArea() const;
         void UpdateWarModeAuras();
