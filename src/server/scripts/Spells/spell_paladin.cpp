@@ -161,63 +161,52 @@ class spell_pal_ardent_defender : public SpellScriptLoader
 */
 
 // 37877 - Blessing of Faith
-class spell_pal_blessing_of_faith : public SpellScriptLoader
+class spell_pal_blessing_of_faith : public SpellScript
 {
-    public:
-        spell_pal_blessing_of_faith() : SpellScriptLoader("spell_pal_blessing_of_faith") { }
+    PrepareSpellScript(spell_pal_blessing_of_faith);
 
-        class spell_pal_blessing_of_faith_SpellScript : public SpellScript
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo(
         {
-            PrepareSpellScript(spell_pal_blessing_of_faith_SpellScript);
+            SPELL_PALADIN_BLESSING_OF_LOWER_CITY_DRUID,
+            SPELL_PALADIN_BLESSING_OF_LOWER_CITY_PALADIN,
+            SPELL_PALADIN_BLESSING_OF_LOWER_CITY_PRIEST,
+            SPELL_PALADIN_BLESSING_OF_LOWER_CITY_SHAMAN
+        });
+    }
 
-            bool Validate(SpellInfo const* /*spellInfo*/) override
-            {
-                return ValidateSpellInfo(
-                {
-                    SPELL_PALADIN_BLESSING_OF_LOWER_CITY_DRUID,
-                    SPELL_PALADIN_BLESSING_OF_LOWER_CITY_PALADIN,
-                    SPELL_PALADIN_BLESSING_OF_LOWER_CITY_PRIEST,
-                    SPELL_PALADIN_BLESSING_OF_LOWER_CITY_SHAMAN
-                });
-            }
-
-            void HandleDummy(SpellEffIndex /*effIndex*/)
-            {
-                if (Unit* unitTarget = GetHitUnit())
-                {
-                    uint32 spell_id = 0;
-                    switch (unitTarget->getClass())
-                    {
-                        case CLASS_DRUID:
-                            spell_id = SPELL_PALADIN_BLESSING_OF_LOWER_CITY_DRUID;
-                            break;
-                        case CLASS_PALADIN:
-                            spell_id = SPELL_PALADIN_BLESSING_OF_LOWER_CITY_PALADIN;
-                            break;
-                        case CLASS_PRIEST:
-                            spell_id = SPELL_PALADIN_BLESSING_OF_LOWER_CITY_PRIEST;
-                            break;
-                        case CLASS_SHAMAN:
-                            spell_id = SPELL_PALADIN_BLESSING_OF_LOWER_CITY_SHAMAN;
-                            break;
-                        default:
-                            return; // ignore for non-healing classes
-                    }
-                    Unit* caster = GetCaster();
-                    caster->CastSpell(caster, spell_id, true);
-                }
-            }
-
-            void Register() override
-            {
-                OnEffectHitTarget += SpellEffectFn(spell_pal_blessing_of_faith_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
-            }
-        };
-
-        SpellScript* GetSpellScript() const override
+    void HandleDummy(SpellEffIndex /*effIndex*/)
+    {
+        if (Unit* unitTarget = GetHitUnit())
         {
-            return new spell_pal_blessing_of_faith_SpellScript();
+            uint32 spell_id = 0;
+            switch (unitTarget->getClass())
+            {
+                case CLASS_DRUID:
+                    spell_id = SPELL_PALADIN_BLESSING_OF_LOWER_CITY_DRUID;
+                    break;
+                case CLASS_PALADIN:
+                    spell_id = SPELL_PALADIN_BLESSING_OF_LOWER_CITY_PALADIN;
+                    break;
+                case CLASS_PRIEST:
+                    spell_id = SPELL_PALADIN_BLESSING_OF_LOWER_CITY_PRIEST;
+                    break;
+                case CLASS_SHAMAN:
+                    spell_id = SPELL_PALADIN_BLESSING_OF_LOWER_CITY_SHAMAN;
+                    break;
+                default:
+                    return; // ignore for non-healing classes
+            }
+            Unit* caster = GetCaster();
+            caster->CastSpell(caster, spell_id, true);
         }
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_pal_blessing_of_faith::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+    }
 };
 
 // 1022 - Blessing of Protection
@@ -1053,7 +1042,7 @@ class spell_pal_t8_2p_bonus : public SpellScriptLoader
 void AddSC_paladin_spell_scripts()
 {
     //new spell_pal_ardent_defender();
-    new spell_pal_blessing_of_faith();
+    RegisterSpellScript(spell_pal_blessing_of_faith);
     RegisterSpellScript(spell_pal_blessing_of_protection);
     RegisterSpellScript(spell_pal_blinding_light);
     RegisterSpellScript(spell_pal_divine_shield);
