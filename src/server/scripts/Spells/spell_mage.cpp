@@ -49,7 +49,6 @@ enum MageSpells
     SPELL_MAGE_IGNITE                            = 12654,
     SPELL_MAGE_LIVING_BOMB_EXPLOSION             = 44461,
     SPELL_MAGE_LIVING_BOMB_PERIODIC              = 217694,
-    SPELL_MAGE_MANA_SURGE                        = 37445,
     SPELL_MAGE_RING_OF_FROST_DUMMY               = 91264,
     SPELL_MAGE_RING_OF_FROST_FREEZE              = 82691,
     SPELL_MAGE_RING_OF_FROST_SUMMON              = 113724,
@@ -64,7 +63,6 @@ enum MageSpells
     SPELL_MAGE_ICY_VEINS                         = 12472,
     SPELL_MAGE_CHAIN_REACTION_DUMMY              = 278309,
     SPELL_MAGE_CHAIN_REACTION                    = 278310,
-    SPELL_MAGE_TOUCH_OF_THE_MAGI_AURA            = 210824,
     SPELL_MAGE_TOUCH_OF_THE_MAGI_EXPLODE         = 210833,
 };
 
@@ -314,7 +312,7 @@ class spell_mage_ice_barrier : public AuraScript
     }
 };
 
-// Ice Lance - 30455
+// 30455 - Ice Lance
 class spell_mage_ice_lance : public SpellScript
 {
     PrepareSpellScript(spell_mage_ice_lance);
@@ -425,29 +423,6 @@ class spell_mage_ignite : public AuraScript
     {
         DoCheckProc += AuraCheckProcFn(spell_mage_ignite::CheckProc);
         OnEffectProc += AuraEffectProcFn(spell_mage_ignite::HandleProc, EFFECT_0, SPELL_AURA_DUMMY);
-    }
-};
-
-// 37447 - Improved Mana Gems
-// 61062 - Improved Mana Gems
-class spell_mage_imp_mana_gems : public AuraScript
-{
-    PrepareAuraScript(spell_mage_imp_mana_gems);
-
-    bool Validate(SpellInfo const* /*spellInfo*/) override
-    {
-        return ValidateSpellInfo({ SPELL_MAGE_MANA_SURGE });
-    }
-
-    void HandleProc(AuraEffect* /*aurEff*/, ProcEventInfo& eventInfo)
-    {
-        PreventDefaultAction();
-        eventInfo.GetActor()->CastSpell(nullptr, SPELL_MAGE_MANA_SURGE, true);
-    }
-
-    void Register() override
-    {
-        OnEffectProc += AuraEffectProcFn(spell_mage_imp_mana_gems::HandleProc, EFFECT_1, SPELL_AURA_DUMMY);
     }
 };
 
@@ -835,7 +810,6 @@ void AddSC_mage_spell_scripts()
     RegisterSpellScript(spell_mage_ice_lance);
     RegisterSpellScript(spell_mage_ice_lance_damage);
     RegisterAuraScript(spell_mage_ignite);
-    RegisterAuraScript(spell_mage_imp_mana_gems);
     RegisterSpellScript(spell_mage_living_bomb);
     RegisterSpellScript(spell_mage_living_bomb_explosion);
     RegisterAuraScript(spell_mage_living_bomb_periodic);
