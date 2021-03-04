@@ -603,8 +603,10 @@ enum class SmartActionSummonCreatureFlags
     None = 0,
     PersonalSpawn = 1,
     PreferUnit = 2,
+    TargetAsSummoner = 4,
+    DontUseTargetPosition = 8,
 
-    All = PersonalSpawn | PreferUnit,
+    All = PersonalSpawn | PreferUnit | TargetAsSummoner | DontUseTargetPosition,
 };
 
 DEFINE_ENUM_FLAG(SmartActionSummonCreatureFlags);

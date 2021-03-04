@@ -203,6 +203,21 @@ void SmartScript::ProcessEventsFor(SMART_EVENT e, Unit* unit, uint32 var0, uint3
     }
 }
 
+void SmartSummonCreature(WorldObject* summoner, WorldObject* target, SmartAction const& action, SmartTarget const& smartTarget, bool personalSpawn, bool useTargetPosition)
+{
+    float x = 0.0f, y = 0.0f, z = 0.0f, o = 0.0f;
+    if (useTargetPosition)
+        target->GetPosition(x, y, z, o);
+    x += smartTarget.x;
+    y += smartTarget.y;
+    z += smartTarget.z;
+    o += smartTarget.o;
+
+    if (Creature* summon = summoner->SummonCreature(action.summonCreature.creature, x, y, z, o, (TempSummonType)action.summonCreature.type, action.summonCreature.duration, personalSpawn))
+        if (action.summonCreature.attackInvoker)
+            summon->AI()->AttackStart(target->ToUnit());
+}
+
 void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, uint32 var1, bool bvar, SpellInfo const* spell, GameObject* gob, std::string const& varString)
 {
     // calc random
@@ -1183,32 +1198,31 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
         case SMART_ACTION_SUMMON_CREATURE:
         {
             EnumFlag<SmartActionSummonCreatureFlags> flags(static_cast<SmartActionSummonCreatureFlags>(e.action.summonCreature.flags));
-            bool preferUnit = flags.HasFlag(SmartActionSummonCreatureFlags::PreferUnit);
-            WorldObject* summoner = preferUnit ? unit : GetBaseObjectOrUnit(unit);
-            if (!summoner)
-                break;
-
             bool personalSpawn = flags.HasFlag(SmartActionSummonCreatureFlags::PersonalSpawn);
 
-            float x, y, z, o;
-            for (WorldObject* target : targets)
+            bool targetAsSummoner = flags.HasFlag(SmartActionSummonCreatureFlags::TargetAsSummoner);
+            bool dontUseTargetPosition = flags.HasFlag(SmartActionSummonCreatureFlags::DontUseTargetPosition);
+
+            WorldObject* summoner = nullptr;
+            if (!targetAsSummoner)
             {
-                target->GetPosition(x, y, z, o);
-                x += e.target.x;
-                y += e.target.y;
-                z += e.target.z;
-                o += e.target.o;
-                if (Creature* summon = summoner->SummonCreature(e.action.summonCreature.creature, x, y, z, o, (TempSummonType)e.action.summonCreature.type, e.action.summonCreature.duration, personalSpawn))
-                    if (e.action.summonCreature.attackInvoker)
-                        summon->AI()->AttackStart(target->ToUnit());
+                bool preferUnit = flags.HasFlag(SmartActionSummonCreatureFlags::PreferUnit);
+                summoner = preferUnit ? unit : GetBaseObjectOrUnit(unit);
+                if (!summoner)
+                    break;
             }
 
-            if (e.GetTargetType() != SMART_TARGET_POSITION)
+            for (WorldObject* target : targets)
+            {
+                if (targetAsSummoner)
+                    summoner = target;
+                SmartSummonCreature(summoner, target, e.action, e.target, personalSpawn, !dontUseTargetPosition);
+            }
+
+            if (e.GetTargetType() != SMART_TARGET_POSITION || targetAsSummoner)
                 break;
 
-            if (Creature* summon = summoner->SummonCreature(e.action.summonCreature.creature, e.target.x, e.target.y, e.target.z, e.target.o, (TempSummonType)e.action.summonCreature.type, e.action.summonCreature.duration, personalSpawn))
-                if (unit && e.action.summonCreature.attackInvoker)
-                    summon->AI()->AttackStart(unit);
+            SmartSummonCreature(summoner, unit, e.action, e.target, personalSpawn, false);
             break;
         }
         case SMART_ACTION_SUMMON_GO:
